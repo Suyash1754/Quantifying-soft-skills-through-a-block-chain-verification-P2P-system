@@ -1,0 +1,175 @@
+import hashlib
+import time
+import random
+import os
+from cryptography.hazmat.primitives.asymmetric import RSA
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.hashes import SHA256
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+class Block:
+    def __init__(self, index, previous_hash, timestamp, data, hash, validator):
+        self.index = index
+        self.previous_hash = previous_hash
+        self.timestamp = timestamp
+        self.data = data
+        self.hash = hash
+        self.validator = validator
+
+def calculate_hash(index, previous_hash, timestamp, data, validator):
+    value = str(index) + hashlib.sha256(str(previous_hash).encode('utf-8')).hexdigest() + str(timestamp) + hashlib.sha256(str(data).encode('utf-8')).hexdigest() + str(hashlib.sha256(str(validator).encode('utf-8')).hexdigest())
+    return hashlib.sha256(value.encode('utf-8')).hexdigest()
+
+def create_genesis_block(validator):
+    return Block(0, "0", int(time.time()), "Genesis Block", calculate_hash(0, "0", int(time.time()), "Genesis Block", validator), validator)
+
+def create_new_block(previous_block, data, validator):
+    index = previous_block.index + 1
+    timestamp = int(time.time())
+    hash = calculate_hash(index, previous_block.previous_hash, timestamp, data, validator)
+    return Block(index, previous_block.previous_hash, timestamp, data, hash, validator)
+
+def is_chain_valid(chain):
+    for i in range(1, len(chain)):
+        current_block = chain[i]
+        previous_block = chain[i - 1]
+
+        if current_block.hash != calculate_hash(current_block.index, previous_block.previous_hash, current_block.timestamp, current_block.data, current_block.validator):
+            return False
+
+        if previous_block.hash != calculate_hash(previous_block.index, previous_block.previous_hash, previous_block.timestamp, previous_block.data, previous_block.validator):
+            return False
+
+    return True
+
+def generate_keypair():
+    private_key = RSA.generate(2048)
+    public_key = private_key.public_key()
+    pem = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    return private_key, pem
+
+def encrypt_data(data, public_key):
+    salt = os.urandom(16)
+    public_key = serialization.load_pem_public_key(public_key, backend=default_backend())
+    nonce = Random.new().read(AES.block_size)
+    algorithm = algorithms.AES(nonce)
+    cipher = Cipher(algorithm, mode=None)
+    encryptor = cipher.encryptor()
+    key = HKDF(
+        algorithm=SHA256(),
+        length=32,
+        salt=salt,
+        info=None,
+        backend=default_backend()
+    ).derive(public_key.public_numbers().n.to_bytes(32, 'big'))
+    ciphertext = encryptor.update(data.encode('utf-8')) + encryptor.finalize()
+    return salt + nonce + ciphertext
+
+def decrypt_data(ciphertext, private_key):
+    salt = ciphertext[:16]
+    ciphertext = ciphertext[16:]
+    nonce = ciphertext[:16]
+    ciphertext = ciphertext[16:]
+    private_key = serialization.load_pem_private_key(private_key, password=None, backend=default_backend())
+    algorithm = algorithms.AES(nonce)
+    cipher = Cipher(algorithm, mode=None)
+    decryptor = cipher.decryptor()
+    key = HKDF(
+        algorithm=SHA256(),
+        length=32,
+        salt=salt,
+        info=None,
+        backend=default_backend()
+    ).derive(private_key.private_numbers().n.to_bytes(32, 'big'))
+    plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+    return plaintext.decode('utf-8')
+
+def generate_wallet():
+    private_key, public_key = generate_keypair()
+    return private_key, public_key
+
+def sign_data(private_key, data):
+    signature = private_key.sign(
+        data.encode('utf-8'),
+        padding.PSS(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ),
+        hashes.SHA256()
+    )
+    return signature
+
+def verify_signature(public_key, data, signature):
+    try:
+        public_key.verify(
+            signature,
+            data.encode('utf-8'),
+            padding.PSS(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+        return True
+    except:
+        return False
+
+def create_transaction(sender_private_key, sender_public_key, receiver_public_key, data):
+    encrypted_data = encrypt_data(data, receiver_public_key)
+    signature = sign_data(sender_private_key, encrypted_data)
+    return encrypted_data, signature
+
+def validate_transaction(transaction, sender_public_key, receiver_public_key):
+    encrypted_data, signature = transaction
+    if verify_signature(sender_public_key, encrypted_data, signature):
+        decrypted_data = decrypt_data(encrypted_data, receiver_public_key)
+        return decrypted_data
+    else:
+        return None
+
+def create_blockchain(validator):
+    blockchain = [create_genesis_block(validator)]
+    previous_block = blockchain[0]
+
+    while True:
+        data = input("Enter data for new block: ")
+        if data == "STOP":
+            break
+
+        if len(blockchain) > 1:
+            balance = 0
+            for block in blockchain:
+                if block.validator == validator:
+                    balance += 1
+            if balance < 10:
+                print("Insufficient balance to create new block.")
+                continue
+
+        encrypted_data, signature = create_transaction(validator_private_key, validator_public_key, receiver_public_key, data)
+        transaction = (encrypted_data, signature)
+
+        block = create_new_block(previous_block, transaction, validator)
+        blockchain.append(block)
+        previous_block = block
+
+    return blockchain
+
+def main():
+    global validator_private_key, validator_public_key, receiver_public_key
+
+    validator_private_key, validator_public_key = generate_wallet()
+    receiver_private_key, receiver_public_key = generate_wallet()
+
+    blockchain = create_blockchain(validator_private_key, validator_public_key, receiver_public_key)
+
+    if is_chain_valid(blockchain):
+        print("Blockchain is valid.")
+    else:
+        print("Blockchain is not valid.")
+
+if __name__ == "__main__":
+    main()
