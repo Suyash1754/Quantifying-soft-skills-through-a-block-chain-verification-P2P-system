@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Credit Management</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        .dropdown-menu {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Select Job <span class="caret"></span></button>
+        <ul class="dropdown-menu">
+            <li><a href="#" data-value="ml-oopsdev">ML/OOPS Dev</a></li>
+            <li><a href="#" data-value="frontend">Frontend</a></li>
+            <li><a href="#" data-value="backend">Backend</a></li>
+        </ul>
+    </div>
+    <h2>Employee Credit Management</h2>
+    <form id="employeeForm">
+        <div class="form-group">
+            <label for="employeeId">Employee ID:</label>
+            <input type="text" class="form-control" id="employeeId" placeholder="Enter Employee ID" name="employeeId">
+        </div>
+        <div class="form-group">
+            <label for="employeeName">Employee Name:</label>
+            <input type="text" class="form-control" id="employeeName" placeholder="Enter Employee Name" name="employeeName">
+        </div>
+        <!-- Update the following div for the skills form -->
+        <div class="form-group">
+            <label for="skills">Skills:</label>
+            <textarea class="form-control" id="skills" placeholder="Enter Employee Skills (comma-separated for multiple skills)" name="skills"></textarea>
+            <!-- TODO: Add code to assign values to the skills string -->
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+    <table class="table" id="employeeTable">
+        <thead>
+            <tr>
+                <th>Employee ID</th>
+                <th>Employee Name</th>
+                <th>Skills</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+<script>
+    $(document).ready(function() {
+        let jobValue = '';
+        $('.dropdown-menu a').click(function(e) {
+            e.preventDefault();
+            jobValue = $(this).data('value');
+            $('.dropdown-toggle').html('Selected Job: ' + jobValue + ' <span class="caret"></span>');
+        });
+
+        let skillValues = {
+            'ml-oops': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            'frontend': [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+            'backend': [0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75]
+        };
+
+        let frontendSkills = {
+            'HTML (Hypertext Markup Language)': 0.5,
+            'CSS (Cascading Style Sheets)': 0.5,
+            'JavaScript': 0.5,
+            'CSS Preprocessing': 0.5,
+            'Responsive Design': 0.5,
+            'CSS Frameworks': 0.5,
+            'JavaScript Frameworks/Libraries': 0.5,
+            'DOM Manipulation': 0.5,
+            'Version Control Systems': 0.5,
+            'Cross-Browser Compatibility': 0.5,
+            'Accessibility Standards': 0.5,
+            'Performance Optimization': 0.5,
+            'Web Typography': 0.5,
+            'Frontend Build Tools (e.g., Webpack, Gulp)': 0.5,
+            'Browser Developer Tools': 0.5
+        };
+
+        let backendSkills = {
+            'Programming Languages': 0.75,
+            'Web Frameworks': 0.75,
+            'Database Management': 0.75,
+            'API Development': 0.75,
+            'Authentication and Authorization': 0.75,
+            'Web Servers': 0.75,
+            'Version Control Systems': 0.75,
+            'Caching Strategies': 0.75,
+            'Microservices Architecture': 0.75,
+            'Containerization and Orchestration': 0.75,
+            'Error Handling and Logging': 0.75,
+            'Data Modeling and ORM (Object-Relational Mapping)': 0.75,
+            'Security Best Practices': 0.75,
+            'Background Job Processing': 0.75,
+            'Scalability and Performance Optimization': 0.75
+        };
+
+        let frontendMLSkills = {
+            'Time Series Forecasting': 0.5,
+            'Semi-Supervised Learning': 0.5,
+            'Active Learning': 0.5,
+            'Model Interpretability': 0.5,
+            'Multi-Task Learning': 0.5,
+            'Hyperparameter Optimization': 0.5,
+            'Reinforcement Learning': 0.5,
+            'Bayesian Optimization': 0.5,
+            'Text Mining': 0.5,
+            'Survival Analysis': 0.5,
+            'Transfer Learning': 0.5,
+            'Graph Analytics': 0.5,
+            'Meta-Learning': 0.5,
+            'Anomaly Detection': 0.5,
+            'Imbalanced Data Handling': 0.5
+        };
+
+        let backendMLSkills = {
+            'Time Series Forecasting': 0.75,
+            'Semi-Supervised Learning': 0.75,
+            'Active Learning': 0.75,
+            'Model Interpretability': 0.75,
+            'Multi-Task Learning': 0.75,
+            'Hyperparameter Optimization': 0.75,
+            'Reinforcement Learning': 0.75,
+            'Bayesian Optimization': 0.75,
+            'Text Mining': 0.75,
+            'Survival Analysis': 0.75,
+            'Transfer Learning': 0.75,
+            'Graph Analytics': 0.75,
+            'Meta-Learning': 0.75,
+            'Anomaly Detection': 0.75,
+            'Imbalanced Data Handling': 0.75
+        };
+
+        $('#employeeForm').on('submit', function(e) {
+            e.preventDefault();
+            let employeeId = $('#employeeId').val();
+            let employeeName = $('#employeeName').val();
+            let skills = $('#skills').val();
+
+            if (!/^[0-9]{3}-[0-9]{2}-[0-9]{4}$/.test(employeeId)) {
+                alert('Invalid Employee ID format.');
+                return;
+            }
+            if (!/^[a-zA-Z]+ [a-zA-Z]+$/.test(employeeName)) {
+                alert('Invalid Employee Name format.');
+                return;
+            }
+
+            let skillValueArr = [];
+            if (jobValue === 'ml-oopsdev') {
+                skillValueArr = skillValues[jobValue];
+            } else if (jobValue === 'frontend') {
+                skillValueArr = skills.split(',').map(skill => frontendSkills[skill] || frontendMLSkills[skill] || 0);
+            } else if (jobValue === 'backend') {
+                skillValueArr = skills.split(',').map(skill => backendSkills[skill] || backendMLSkills[skill] || 0);
+            }
+
+            let totalValue = 0;
+            if (skillValueArr.length) {
+                totalValue = skillValueArr.reduce((acc, val) => acc + val, 0);
+            }
+
+            $('#employeeTable tbody').append('<tr><td>' + employeeId + '</td><td>' + employeeName + '</td><td>' + totalValue.toFixed(2) + '</td></tr>');
+            $('#employeeForm')[0].reset();
+            $('.dropdown-toggle').html('Select Job <span class="caret"></span>');
+        });
+    });
+</script>
+
+</body>
+</html>
